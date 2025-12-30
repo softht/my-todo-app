@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的待办清单</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 500px;
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        #taskInput {
+            flex: 1;
+            padding: 14px 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            outline: none;
+        }
+
+        #taskInput:focus {
+            border-color: #667eea;
+        }
+
+        #addBtn {
+            padding: 14px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        #addBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        #addBtn:active {
+            transform: translateY(0);
+        }
+
+        .task-list {
+            list-style: none;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            padding: 16px 18px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+
+        .task-item:hover {
+            background: #f0f1f3;
+            transform: translateX(5px);
+        }
+
+        .task-content {
+            flex: 1;
+        }
+
+        .task-text {
+            font-size: 16px;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .task-time {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .time-icon {
+            margin-right: 4px;
+        }
+
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+            color: #999;
+        }
+
+        .delete-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            margin-left: 10px;
+        }
+
+        .delete-btn:hover {
+            background: #ee5a52;
+            transform: scale(1.1);
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 40px 20px;
+            font-size: 16px;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            #taskInput, #addBtn {
+                font-size: 14px;
+                padding: 12px 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>我的待办清单</h1>
+        <div class="input-container">
+            <input type="text" id="taskInput" placeholder="添加新任务..." maxlength="100">
+            <button id="addBtn">添加</button>
+        </div>
+        <ul class="task-list" id="taskList"></ul>
+    </div>
+
+    <script>
+        // 任务状态数组
+        let tasks = [];
+        let taskIdCounter = 0;
+
+        // 获取 DOM 元素
+        const taskInput = document.getElementById('taskInput');
+        const addBtn = document.getElementById('addBtn');
+        const taskList = document.getElementById('taskList');
+
+        // 添加任务函数
+        function addTask() {
+            const text = taskInput.value.trim();
+
+            if (text === '') {
+                taskInput.focus();
+                return;
+            }
+
+            const task = {
+                id: ++taskIdCounter,
+                text: text,
+                completed: false,
+                createdAt: new Date()
+            };
+
+            tasks.push(task);
+            taskInput.value = '';
+            taskInput.focus();
+            renderTasks();
+        }
+
+        // 切换任务完成状态
+        function toggleTask(id) {
+            const task = tasks.find(t => t.id === id);
+            if (task) {
+                task.completed = !task.completed;
+                renderTasks();
+            }
+        }
+
+        // 删除任务
+        function deleteTask(id) {
+            tasks = tasks.filter(t => t.id !== id);
+            renderTasks();
+        }
+
+        // 渲染任务列表
+        function renderTasks() {
+            if (tasks.length === 0) {
+                taskList.innerHTML = '<li class="empty-state">还没有任务，添加一个吧！</li>';
+                return;
+            }
+
+            taskList.innerHTML = tasks.map(task => `
+                <li class="task-item ${task.completed ? 'completed' : ''}">
+                    <div class="task-content">
+                        <span class="task-text" onclick="toggleTask(${task.id})">${escapeHtml(task.text)}</span>
+                        <div class="task-time"><span class="time-icon">⏰</span> ${formatDate(task.createdAt)}</div>
+                    </div>
+                    <button class="delete-btn" onclick="deleteTask(${task.id})" title="删除">×</button>
+                </li>
+            `).join('');
+        }
+
+        // 格式化日期时间
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        }
+
+        // HTML 转义防止 XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 事件监听
+        addBtn.addEventListener('click', addTask);
+
+        taskInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addTask();
+            }
+        });
+
+        // 初始化渲染
+        renderTasks();
+    </script>
+</body>
+</html>
