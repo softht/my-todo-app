@@ -105,7 +105,6 @@
         .task-text {
             font-size: 16px;
             color: #333;
-            cursor: pointer;
             transition: all 0.3s;
         }
 
@@ -115,8 +114,10 @@
             margin-top: 4px;
         }
 
-        .time-icon {
-            margin-right: 4px;
+        .task-completed-time {
+            font-size: 12px;
+            color: #4caf50;
+            margin-top: 4px;
         }
 
         .task-item.completed .task-text {
@@ -124,18 +125,31 @@
             color: #999;
         }
 
+        .complete-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            background: #4caf50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            margin-left: 10px;
+        }
+
+        .complete-btn:hover {
+            background: #45a049;
+            transform: scale(1.1);
+        }
+
         .delete-btn {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
+            padding: 6px 12px;
+            border-radius: 6px;
             background: #ff6b6b;
             color: white;
             border: none;
             cursor: pointer;
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            font-size: 14px;
             transition: all 0.3s;
             margin-left: 10px;
         }
@@ -150,6 +164,19 @@
             color: #999;
             padding: 40px 20px;
             font-size: 16px;
+        }
+
+        .task-stats {
+            text-align: center;
+            color: #999;
+            font-size: 14px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .task-stats strong {
+            color: #667eea;
         }
 
         @media (max-width: 480px) {
@@ -176,6 +203,7 @@
             <button id="addBtn">添加</button>
         </div>
         <ul class="task-list" id="taskList"></ul>
+        <div class="task-stats" id="taskStats"></div>
     </div>
 
     <script>
@@ -187,6 +215,7 @@
         const taskInput = document.getElementById('taskInput');
         const addBtn = document.getElementById('addBtn');
         const taskList = document.getElementById('taskList');
+        const taskStats = document.getElementById('taskStats');
 
         // 添加任务函数
         function addTask() {
@@ -201,20 +230,22 @@
                 id: ++taskIdCounter,
                 text: text,
                 completed: false,
+                completedAt: null,
                 createdAt: new Date()
             };
 
-            tasks.push(task);
+            tasks.unshift(task);
             taskInput.value = '';
             taskInput.focus();
             renderTasks();
         }
 
-        // 切换任务完成状态
-        function toggleTask(id) {
+        // 完成任务
+        function completeTask(id) {
             const task = tasks.find(t => t.id === id);
-            if (task) {
-                task.completed = !task.completed;
+            if (task && !task.completed) {
+                task.completed = true;
+                task.completedAt = new Date();
                 renderTasks();
             }
         }
@@ -229,18 +260,26 @@
         function renderTasks() {
             if (tasks.length === 0) {
                 taskList.innerHTML = '<li class="empty-state">还没有任务，添加一个吧！</li>';
+                taskStats.innerHTML = '';
                 return;
             }
 
             taskList.innerHTML = tasks.map(task => `
                 <li class="task-item ${task.completed ? 'completed' : ''}">
                     <div class="task-content">
-                        <span class="task-text" onclick="toggleTask(${task.id})">${escapeHtml(task.text)}</span>
-                        <div class="task-time"><span class="time-icon">⏰</span> ${formatDate(task.createdAt)}</div>
+                        <span class="task-text">${escapeHtml(task.text)}</span>
+                        <div class="task-time">创建: ${formatDate(task.createdAt)}</div>
+                        ${task.completed ? `<div class="task-completed-time">完成: ${formatDate(task.completedAt)}</div>` : ''}
                     </div>
-                    <button class="delete-btn" onclick="deleteTask(${task.id})" title="删除">×</button>
+                    ${!task.completed ? `<button class="complete-btn" onclick="completeTask(${task.id})">完成</button>` : ''}
+                    <button class="delete-btn" onclick="deleteTask(${task.id})">删除</button>
                 </li>
             `).join('');
+
+            // 更新统计信息
+            const pendingCount = tasks.filter(t => !t.completed).length;
+            const completedCount = tasks.filter(t => t.completed).length;
+            taskStats.innerHTML = `待办: <strong>${pendingCount}</strong> / 已完成: <strong>${completedCount}</strong>`;
         }
 
         // 格式化日期时间
